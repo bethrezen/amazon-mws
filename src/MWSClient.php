@@ -361,13 +361,37 @@ class MWSClient{
             $query
         );
 
-        if (isset($response['ListOrdersResult']['Orders']['Order'])) {
-            $response = $response['ListOrdersResult']['Orders']['Order'];
-            if (array_keys($response) !== range(0, count($response) - 1)) {
-                return [$response];
+        if (isset($response['ListOrdersResult']['Orders']['Order']))
+        {
+            $orders = $response['ListOrdersResult']['Orders']['Order'];
+
+            if (isset($response['ListOrdersResult']['NextToken']))
+            {
+                $query['NextToken'] = $response['ListOrdersResult']['NextToken'];
+                do
+                {
+                    $response = $this->request(
+                        'ListOrdersByNextToken',
+                        $query
+                    );
+
+                    if (isset($response['ListOrdersByNextTokenResult']['NextToken']))
+                    {
+                        $query['NextToken'] = $response['ListOrdersByNextTokenResult']['NextToken'];
+                    }
+
+                    $newOrders = $response['ListOrdersByNextTokenResult']['Orders']['Order'];
+                    foreach ($newOrders as $order) {
+                        $orders[] = $order;
+                    }
+
+                }
+                while (isset($response['ListOrdersByNextTokenResult']['NextToken']));
             }
-            return $response;
-        } else {
+            return $orders;
+        }
+        else
+        {
             return [];
         }
     }
